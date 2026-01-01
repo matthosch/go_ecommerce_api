@@ -27,13 +27,17 @@ func (h *handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 
-		if err == ErrProductNotFound {
+		switch err {
+		case ErrProductNoStock:
+			http.Error(w, err.Error(), http.StatusConflict)
+			return
+		case ErrProductNotFound:
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
-
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 	json.Write(w, http.StatusCreated, createdOrder)
 }
