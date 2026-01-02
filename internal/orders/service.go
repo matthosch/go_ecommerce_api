@@ -11,7 +11,7 @@ import (
 
 var (
 	ErrProductNotFound = errors.New("product not found")
-	ErrProductNoStock  = errors.New("product out of stock")
+	ErrProductNoStock  = errors.New("product has insufficient stock")
 )
 
 type Service interface {
@@ -69,9 +69,16 @@ func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo
 		if err != nil {
 			return repo.Order{}, err
 		}
+		// deduct the product stock quantity
+		_, err = qtx.UpdateProductQuantity(ctx, repo.UpdateProductQuantityParams{
+			ID:       item.ProductID,
+			Quantity: product.Quantity - item.Quantity,
+		})
+		if err != nil {
+			return repo.Order{}, err
+		}
 
 		// Challenges:
-		// deduct the product stock quantity
 		// GET /orders/{id} to retrieve order details
 		// POST /product to create new products
 	}

@@ -24,3 +24,9 @@ INSERT INTO order_items (
   quantity,
   price_cents
 ) VALUES ($1, $2, $3, $4) RETURNING *;
+
+-- name: UpdateProductQuantity :one
+UPDATE products
+SET quantity = $2
+WHERE id = $1
+RETURNING *;
