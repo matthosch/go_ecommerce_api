@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -32,15 +32,18 @@ func (app *application) mount() http.Handler {
 		w.Write([]byte("all good"))
 	})
 
+	// Initialize database queries
+	queries := repo.New(app.db)
+
 	// Products routes
-	productService := products.NewService(repo.New(app.db))
+	productService := products.NewService(queries)
 	productsHandler := products.NewHandler(productService)
 	r.Post("/products", productsHandler.CreateProduct)
 	r.Get("/products", productsHandler.ListProducts)
 	r.Get("/products/{id}", productsHandler.FindProductByID)
 
 	// Orders routes
-	orderService := orders.NewService(repo.New(app.db), app.db)
+	orderService := orders.NewService(queries, app.db)
 	ordersHandler := orders.NewHandler(orderService)
 	r.Post("/orders", ordersHandler.PlaceOrder)
 	r.Get("/orders/{id}", ordersHandler.GetOrderDetails)
@@ -58,7 +61,7 @@ func (app *application) run(h http.Handler) error {
 		IdleTimeout:  time.Minute,
 	}
 
-	log.Printf("server starting on %s", app.config.addr)
+	slog.Info("server starting", "addr", app.config.addr)
 
 	return srv.ListenAndServe()
 }
