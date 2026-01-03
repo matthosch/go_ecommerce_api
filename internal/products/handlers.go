@@ -34,7 +34,7 @@ func (h *handler) ListProducts(w http.ResponseWriter, r *http.Request) {
 func (h *handler) FindProductByID(w http.ResponseWriter, r *http.Request) {
 	// Extract product ID from URL
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
-	if err != nil {
+	if err != nil || id <= 0 {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
