@@ -12,10 +12,12 @@ import (
 var (
 	ErrProductNotFound = errors.New("product not found")
 	ErrProductNoStock  = errors.New("product has insufficient stock")
+	ErrOrderNotFound   = errors.New("order not found")
 )
 
 type Service interface {
 	PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo.Order, error)
+	GetOrderDetails(ctx context.Context, orderID int64) (orderDetails, error)
 }
 
 type svc struct {
@@ -79,10 +81,32 @@ func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo
 		}
 
 		// Challenges:
-		// GET /orders/{id} to retrieve order details
 		// POST /product to create new products
 	}
 
 	tx.Commit(ctx)
 	return order, nil
+}
+
+// GET /orders/{id} to retrieve order details
+func (s *svc) GetOrderDetails(ctx context.Context, orderID int64) (orderDetails, error) {
+	order, err := s.repo.GetOrderByID(ctx, orderID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return orderDetails{}, ErrOrderNotFound
+		}
+		return orderDetails{}, err
+	}
+
+	products, err := s.repo.GetProductsByOrderID(ctx, orderID)
+	if err != nil {
+		return orderDetails{}, err
+	}
+
+	return orderDetails{
+		OrderId:    order.ID,
+		CustomerID: order.CustomerID,
+		CreatedAt:  order.CreatedAt,
+		Products:   products,
+	}, nil
 }

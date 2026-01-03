@@ -3,7 +3,9 @@ package orders
 import (
 	"log"
 	"net/http"
+	"strconv"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/matthosch/go_ecommerce_api/internal/json"
 )
 
@@ -40,4 +42,21 @@ func (h *handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	json.Write(w, http.StatusCreated, createdOrder)
+}
+
+// GetOrderDetails handles the HTTP request to get order details by ID.
+func (h *handler) GetOrderDetails(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "invalid order ID", http.StatusBadRequest)
+		return
+	}
+	orderDetails, err := h.service.GetOrderDetails(r.Context(), id)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.Write(w, http.StatusOK, orderDetails)
 }
