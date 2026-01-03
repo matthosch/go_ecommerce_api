@@ -1,6 +1,7 @@
 package orders
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -47,7 +48,7 @@ func (h *handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 // GetOrderDetails handles the HTTP request to get order details by ID.
 func (h *handler) GetOrderDetails(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
-	if err != nil {
+	if err != nil || id <= 0 {
 		log.Println(err)
 		http.Error(w, "invalid order ID", http.StatusBadRequest)
 		return
@@ -55,6 +56,10 @@ func (h *handler) GetOrderDetails(w http.ResponseWriter, r *http.Request) {
 	orderDetails, err := h.service.GetOrderDetails(r.Context(), id)
 	if err != nil {
 		log.Println(err)
+		if errors.Is(err, ErrOrderNotFound) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
