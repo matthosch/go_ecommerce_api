@@ -2,8 +2,14 @@ package products
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgx/v5"
 	repo "github.com/matthosch/go_ecommerce_api/internal/adapters/postgresql/sqlc"
+)
+
+var (
+	ErrProductNotFound = errors.New("product not found")
 )
 
 type Service interface {
@@ -25,7 +31,14 @@ func (s *svc) ListProducts(ctx context.Context) ([]repo.Product, error) {
 }
 
 func (s *svc) FindProductByID(ctx context.Context, id int64) (repo.Product, error) {
-	return s.repo.FindProductByID(ctx, id)
+	product, err := s.repo.FindProductByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return repo.Product{}, ErrProductNotFound
+		}
+		return repo.Product{}, err
+	}
+	return product, nil
 }
 
 func (s *svc) CreateProduct(ctx context.Context, tempProduct Product) (repo.Product, error) {

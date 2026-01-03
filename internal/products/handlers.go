@@ -2,7 +2,7 @@ package products
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -22,7 +22,7 @@ func NewHandler(service Service) *handler {
 func (h *handler) ListProducts(w http.ResponseWriter, r *http.Request) {
 	products, err := h.service.ListProducts(r.Context())
 	if err != nil {
-		log.Println(err)
+		slog.Error("failed to list products", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -41,7 +41,11 @@ func (h *handler) FindProductByID(w http.ResponseWriter, r *http.Request) {
 
 	product, err := h.service.FindProductByID(r.Context(), id)
 	if err != nil {
-		log.Println(err)
+		if err == ErrProductNotFound {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		slog.Error("failed to find product", "product_id", id, "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -59,14 +63,14 @@ func (h *handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 
 	// validate payload
 	if err := validateProductInput(tempProduct); err != nil {
-		log.Println(err)
+		slog.Error("invalid product input", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	product, err := h.service.CreateProduct(r.Context(), tempProduct)
 	if err != nil {
-		log.Println(err)
+		slog.Error("failed to create product", "product_name", tempProduct.Name, "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

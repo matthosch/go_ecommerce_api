@@ -2,7 +2,7 @@ package orders
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -22,21 +22,21 @@ func NewHandler(service Service) *handler {
 func (h *handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 	var tempOrder createOrderParams
 	if err := json.Read(r, &tempOrder); err != nil {
-		log.Println(err)
+		slog.Error("invalid JSON in order request", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// validate payload
 	if err := validateOrderInput(tempOrder); err != nil {
-		log.Println(err)
+		slog.Error("invalid order input", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	createdOrder, err := h.service.PlaceOrder(r.Context(), tempOrder)
 	if err != nil {
-		log.Println(err)
+		slog.Error("failed to place order", "error", err)
 
 		switch err {
 		case ErrProductNoStock:
@@ -57,17 +57,17 @@ func (h *handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 func (h *handler) GetOrderDetails(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil || id <= 0 {
-		log.Println(err)
+		slog.Error("invalid order ID", "error", err)
 		http.Error(w, "invalid order ID", http.StatusBadRequest)
 		return
 	}
 	orderDetails, err := h.service.GetOrderDetails(r.Context(), id)
 	if err != nil {
-		log.Println(err)
 		if errors.Is(err, ErrOrderNotFound) {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
+		slog.Error("failed to get order details", "order_id", id, "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
