@@ -26,6 +26,14 @@ func (h *handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// validate payload
+	if err := validateOrderInput(tempOrder); err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	createdOrder, err := h.service.PlaceOrder(r.Context(), tempOrder)
 	if err != nil {
 		log.Println(err)
@@ -64,4 +72,14 @@ func (h *handler) GetOrderDetails(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.Write(w, http.StatusOK, orderDetails)
+}
+
+func validateOrderInput(o createOrderParams) error {
+	if o.CustomerID <= 0 {
+		return errors.New("customer ID must be positive")
+	}
+	if len(o.Items) == 0 {
+		return errors.New("at least one order item is required")
+	}
+	return nil
 }

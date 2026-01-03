@@ -9,6 +9,7 @@ import (
 type Service interface {
 	ListProducts(ctx context.Context) ([]repo.Product, error)
 	FindProductByID(ctx context.Context, id int64) (repo.Product, error)
+	CreateProduct(ctx context.Context, tempProduct Product) (repo.Product, error)
 }
 
 type svc struct {
@@ -25,4 +26,12 @@ func (s *svc) ListProducts(ctx context.Context) ([]repo.Product, error) {
 
 func (s *svc) FindProductByID(ctx context.Context, id int64) (repo.Product, error) {
 	return s.repo.FindProductByID(ctx, id)
+}
+
+func (s *svc) CreateProduct(ctx context.Context, tempProduct Product) (repo.Product, error) {
+	return s.repo.CreateProduct(ctx, repo.CreateProductParams{
+		Name:         tempProduct.Name,
+		PriceInCents: tempProduct.PriceInCents,
+		Quantity:     tempProduct.Quantity,
+	})
 }

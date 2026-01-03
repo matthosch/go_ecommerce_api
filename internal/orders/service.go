@@ -3,7 +3,6 @@ package orders
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	repo "github.com/matthosch/go_ecommerce_api/internal/adapters/postgresql/sqlc"
@@ -30,14 +29,6 @@ func NewService(repo *repo.Queries, db *pgx.Conn) Service {
 }
 
 func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo.Order, error) {
-	// validate payload
-	if tempOrder.CustomerID <= 0 {
-		return repo.Order{}, fmt.Errorf("customer ID is required")
-	}
-	if len(tempOrder.Items) == 0 {
-		return repo.Order{}, fmt.Errorf("at least one order item is required")
-	}
-
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
 		return repo.Order{}, err
@@ -79,9 +70,6 @@ func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo
 		if err != nil {
 			return repo.Order{}, err
 		}
-
-		// Challenges:
-		// POST /product to create new products
 	}
 
 	tx.Commit(ctx)
